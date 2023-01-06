@@ -1,8 +1,8 @@
 data "archive_file" "lambda_zip" {
   type             = "zip"
-  source_file      = "${path.module}/ami-script.py"
+  source_file      = "${path.module}/ami-script.js"
   output_file_mode = "0666"
-  output_path      = "${path.module}/ami-script.py.zip"
+  output_path      = "${path.module}/ami-script.js.zip"
 }
 
 resource "aws_lambda_function" "processing_lambda" {
@@ -12,7 +12,7 @@ resource "aws_lambda_function" "processing_lambda" {
   source_code_hash = data.archive_file.lambda_zip.output_base64sha256
   role             = aws_iam_role.processing_lambda_role.arn
 
-  runtime = var.runtime
+  runtime          = "nodejs18.x"
 }
 
 resource "aws_iam_role" "processing_lambda_role" {
@@ -37,10 +37,15 @@ data "aws_iam_policy_document" "assume-role-policy_document" {
   }
 }
 
-data "aws_iam_policy_document" "lambda_access" {
+data "aws_iam_policy_document" "lambda_eks_access" {
   statement {
     actions = [
-      "lambda:InvokeFunction"
+      "eks:DescribeCluster",
+      "eks:DescribeNodegroups",
+      "eks:DescribeUpdate",
+      "eks:ListClusters",
+      "eks:UpdateClusterVersion",
+      "eks:UpdateNodegroupVersion"
     ]
     resources = ["*"]
 
