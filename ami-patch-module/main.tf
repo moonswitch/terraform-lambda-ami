@@ -22,7 +22,7 @@ resource "aws_iam_role" "processing_lambda_role" {
 
   inline_policy {
     name   = "test_policy"
-    policy = data.aws_iam_policy_document.lambda_access.json
+    policy = data.aws_iam_policy_document.lambda_eks_access.json
   }
 }
 
