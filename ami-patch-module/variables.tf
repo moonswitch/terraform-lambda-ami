@@ -5,3 +5,5 @@ variable "processing_lambda_role_name" {}
 variable "schedule" {}
 
 variable "schedule_name" {}
+
+variable "runtime" {}

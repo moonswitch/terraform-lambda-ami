@@ -31,6 +31,7 @@ module "test" {
   processing_lambda_role_name = "eks-ami-patcher-role"
   schedule_name               = "ami-patch-event"
   schedule                    = "rate(1 day)"
+  runtime                     = "python3.8"
 }
 
 variable "region" {}

@@ -12,7 +12,7 @@ resource "aws_lambda_function" "processing_lambda" {
   source_code_hash = data.archive_file.lambda_zip.output_base64sha256
   role             = aws_iam_role.processing_lambda_role.arn
 
-  runtime = "python3.8"
+  runtime = var.runtime
 }
 
 resource "aws_iam_role" "processing_lambda_role" {
