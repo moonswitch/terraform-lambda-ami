@@ -22,7 +22,7 @@ resource "aws_iam_role" "processing_lambda_role" {
 
   inline_policy {
     name   = "test_policy"
-    policy = data.aws_iam_policy_document.lambda_eks_access.json
+    policy = data.aws_iam_policy_document.lambda_permissions.json
   }
 }
 
@@ -37,7 +37,7 @@ data "aws_iam_policy_document" "assume-role-policy_document" {
   }
 }
 
-data "aws_iam_policy_document" "lambda_eks_access" {
+data "aws_iam_policy_document" "lambda_permissions" {
   statement {
     actions = [
       "eks:DescribeCluster",
@@ -45,7 +45,10 @@ data "aws_iam_policy_document" "lambda_eks_access" {
       "eks:DescribeUpdate",
       "eks:ListClusters",
       "eks:UpdateClusterVersion",
-      "eks:UpdateNodegroupVersion"
+      "eks:UpdateNodegroupVersion",
+      "logs:CreateLogGroup",
+      "logs:CreateLogStream",
+      "logs:PutLogEvents"
     ]
     resources = ["*"]
 
