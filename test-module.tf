@@ -11,7 +11,7 @@ terraform {
 }
 
 provider "aws" {
-  region = var.region
+  region = "us-east-2"
 }
 
 terraform {
@@ -27,10 +27,6 @@ terraform {
 module "test" {
   source = "./ami-patch-module"
 
-  processing_lambda_name      = "eks-ami-patcher"
-  processing_lambda_role_name = "eks-ami-patcher-role"
-  schedule_name               = "ami-patch-event"
-  schedule                    = "rate(1 day)"
+  region  = "us-east-2"
+  cluster = "some-test-cluster"
 }
-
-variable "region" {}
