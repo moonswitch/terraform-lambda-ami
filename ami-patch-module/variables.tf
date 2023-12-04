@@ -1,7 +1,15 @@
-variable "processing_lambda_name" {}
+variable "region" {
+  description = "The AWS region of the EKS cluster."
+  type        = string
+}
 
-variable "processing_lambda_role_name" {}
+variable "cluster" {
+  description = "The name of the EKS cluster."
+  type        = string
+}
 
-variable "schedule" {}
-
-variable "schedule_name" {}
+variable "rate" {
+  description = "The rate at which the Lambda function will check for AMI updates."
+  default     = "cron(0 0 */3 * ? *)"
+  type        = string
+}
