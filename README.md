@@ -2,7 +2,7 @@
 Usage:
 ```
 module "test" {
-  source = "./ami-patch-module"
+  source = "github.com/moonswitch/terraform-lambda-ami//ami-patch-module?ref=main"
 
   region  = "us-east-2"
   cluster = "some-test-cluster"
