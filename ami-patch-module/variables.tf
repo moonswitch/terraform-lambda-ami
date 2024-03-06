@@ -10,6 +10,7 @@ variable "cluster" {
 
 variable "webhook_url" {
   description = "Webhook URL"
+  default     = null
   type        = string
 }
 
