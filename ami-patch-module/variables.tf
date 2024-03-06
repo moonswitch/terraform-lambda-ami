@@ -8,6 +8,11 @@ variable "cluster" {
   type        = string
 }
 
+variable "webhook_url" {
+  description = "Webhook URL"
+  type        = string
+}
+
 variable "rate" {
   description = "The rate at which the Lambda function will check for AMI updates."
   default     = "cron(0 0 */3 * ? *)"

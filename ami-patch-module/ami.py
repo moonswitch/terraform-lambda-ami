@@ -1,31 +1,60 @@
 from __future__ import print_function
 import os
 import boto3
+import json
+import requests
 
-client = boto3.client('eks')
+def SendWebhookNotification(webhookURL, updateDetails):
+    headers = {"Content-Type": "application/json"}
+    response = requests.post(webhookURL, data=json.dumps(updateDetails, default=str), headers=headers)
+    return response.status_code
 
-def handler(event, context):
-    cluster = os.getenv("cluster", None)
-    region = os.getenv("region", None)
+def lambda_handler(event, context):
+    client = boto3.client('eks')
+    
+    cluster = os.getenv("cluster")
+    region = os.getenv("region")
+    webhookURL = os.getenv("webhook-url")
 
     if cluster and region:
-        message = "Env vars are there cluster: {} region: {}!".format(cluster, region)
-        # List Node Groups inside cluster
-        response = client.list_nodegroups(
-            clusterName=cluster,
-        )
+        message = "Cluster: {} Region: {}".format(cluster, region)
         try:
-            for nodegroup in response['nodegroups']:
+            response = client.list_nodegroups(clusterName=cluster)
+            for nodegroup in response["nodegroups"]:
                 print("Node Group => {}".format(nodegroup))
-                response = client.update_nodegroup_version(
+                update_response = client.update_nodegroup_version(
                     clusterName=cluster,
                     nodegroupName=nodegroup,
                 )
-                message = "Update => {}".format(response)
-        except:
-            message = "Something went badly wrong, do you have Managed Node groups in this cluster?"
+
+                updateDetails = {
+                    "cluster": cluster,
+                    "nodegroup": nodegroup,
+                    "update-status": update_response["update"]["status"],
+                    "details": update_response
+                }
+                message = "Update => {}".format(updateDetails)
+                print(message)
+
+                if webhookURL:
+                    SendWebhookNotification(webhookURL, updateDetails)
+
+        except Exception as e:
+            message = "Something went badly wrong: {}".format(e)
+            print(message)
+
+            if webhookURL:
+                errorDetails = {
+                    "cluster": cluster,
+                    "error": str(e),
+                    "details": "An error occurred during the update process."
+                }
+                SendWebhookNotification(webhookURL, errorDetails)
+            
     else:
         message = "No env vars passed"
+    
 
-    print(message)
-    return message
+    return {
+        "statusCode": 200
+    }

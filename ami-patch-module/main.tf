@@ -37,6 +37,7 @@ resource "aws_lambda_function" "eks_ami_upgrade" {
     variables = {
       cluster = var.cluster
       region  = var.region
+      webhook_url = var.webhook_url
     }
   }
 }
