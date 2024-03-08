@@ -30,4 +30,4 @@ override.tf.json
 
 *.zip
 .terraform.lock.hcl
-venv
+lambda-env
