@@ -30,7 +30,7 @@ resource "aws_lambda_function" "eks_ami_upgrade" {
   function_name    = "update_node_group_function"
   role             = aws_iam_role.lambda_execution_role.arn
   handler          = "ami.handler"
-  runtime          = "python3.8"
+  runtime          = "python3.10"
   source_code_hash = filebase64sha256(data.archive_file.lambda_zip.output_path)
 
   environment {
