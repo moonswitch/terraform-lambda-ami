@@ -25,6 +25,7 @@ resource "aws_lambda_function" "eks_ami_upgrade" {
   handler          = "ami.lambda_handler"
   runtime          = "python3.10"
 
+  source_code_hash = filebase64sha256("${path.module}/ami.zip")
   environment {
     variables = {
       cluster = var.cluster
