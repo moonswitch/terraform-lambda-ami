@@ -26,7 +26,7 @@ resource "aws_lambda_permission" "allow_cloudwatch" {
 }
 
 resource "aws_lambda_function" "eks_ami_upgrade" {
-  filename         = "ami.zip"
+  filename         = "${path.module}/ami.zip"
   function_name    = "update_node_group_function"
   role             = aws_iam_role.lambda_execution_role.arn
   handler          = "ami.handler"
