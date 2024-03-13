@@ -5,7 +5,7 @@ The following terraform module is for auto-patching the EKS cluster nodegroups A
 ## Usage:
 ```
 module "ami_patch_cluster1" {
-  source = "github.com/moonswitch/terraform-lambda-ami//ami-patch-module?ref=main"
+  source = "github.com/moonswitch/terraform-lambda-ami//ami-patch-module?ref=<version>"
 
   region      = "us-east-2"
   cluster     = "cluster1"
@@ -14,7 +14,7 @@ module "ami_patch_cluster1" {
 
 
 module "ami_patch_cluster2" {
-  source = "github.com/moonswitch/terraform-lambda-ami//ami-patch-module?ref=main"
+  source = "github.com/moonswitch/terraform-lambda-ami//ami-patch-module?ref=v1.0.0"
 
   region      = "us-east-2"
   cluster     = "cluster2"
