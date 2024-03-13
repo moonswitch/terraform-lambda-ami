@@ -1,6 +1,6 @@
 resource "aws_cloudwatch_event_rule" "ami_lambda_schedule" {
-  name                = "ami-patch-schedule"
   description         = "A schedule for the EKS AMI nodegroup patch upgrades"
+  name                = "ami-patch-schedule-${var.cluster}"
   schedule_expression = var.rate
 }
 
@@ -36,7 +36,7 @@ resource "aws_lambda_function" "eks_ami_upgrade" {
 }
 
 resource "aws_iam_role" "lambda_execution_role" {
-  name = "lambda_execution_role"
+  name = "lambda_execution_role_${var.cluster}"
 
   assume_role_policy = jsonencode({
     Version = "2012-10-17",
