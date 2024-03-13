@@ -20,7 +20,7 @@ resource "aws_lambda_permission" "allow_cloudwatch" {
 
 resource "aws_lambda_function" "eks_ami_upgrade" {
   filename         = "${path.module}/ami.zip"
-  function_name    = "update_node_group_function"
+  function_name    = "update_node_group_function_${var.cluster}"
   role             = aws_iam_role.lambda_execution_role.arn
   handler          = "ami.lambda_handler"
   runtime          = "python3.10"
