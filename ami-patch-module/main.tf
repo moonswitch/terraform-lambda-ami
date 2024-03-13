@@ -24,6 +24,7 @@ resource "aws_lambda_function" "eks_ami_upgrade" {
   role             = aws_iam_role.lambda_execution_role.arn
   handler          = "ami.lambda_handler"
   runtime          = "python3.10"
+  timeout          = 60
 
   source_code_hash = filebase64sha256("${path.module}/ami.zip")
   environment {
