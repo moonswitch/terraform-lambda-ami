@@ -29,7 +29,7 @@ module "ami_patch_cluster2" {
   
 `cluster`     - Required: The name of your EKS cluster  
   
-`rate`        - Optional: The rate at which the Lambda function should run to check for updates (Default 00:00 UTC)  
+`rate`        - Optional: The rate at which the Lambda function should run to check for updates (Default 00:00 UTC every three days)  
   
 `webhook-url` - Optional: URL endpoint for status of nodegroup updates (Default JSON Serialization is string).   
 
