@@ -11,7 +11,7 @@ module "ami_patch_cluster1" {
   cluster     = "cluster1"
   rate        = "cron(0 0 */3 * ? *)"
   webhook_url = "webhook_url"
-
+}
 
 module "ami_patch_cluster2" {
   source = "github.com/moonswitch/terraform-lambda-ami//ami-patch-module?ref=v1.0.0"
