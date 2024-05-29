@@ -46,6 +46,7 @@ data "aws_iam_policy_document" "eks_ami_upgrade_policy" {
       "eks:DescribeNodegroup",
       "eks:UpdateNodegroupVersion",
       "eks:DescribeUpdate",
+      "eks:ListNodegroups",
       "cloudwatch:PutMetricData",
       "iam:PassRole"
     ]
