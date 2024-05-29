@@ -2,6 +2,8 @@ resource "aws_cloudwatch_event_rule" "ami_lambda_schedule" {
   description         = "A schedule for the EKS AMI nodegroup patch upgrades"
   name                = "ami-patch-schedule-${var.cluster}"
   schedule_expression = var.rate
+
+  tags = local.merge_tags
 }
 
 resource "aws_cloudwatch_event_target" "ami_lambda_schedule_target" {
@@ -34,6 +36,8 @@ resource "aws_lambda_function" "eks_ami_upgrade" {
       webhook_url = var.webhook_url
     }
   }
+
+  tags = local.merge_tags
 }
 
 resource "aws_iam_role" "lambda_execution_role" {
@@ -65,4 +69,6 @@ resource "aws_iam_role" "lambda_execution_role" {
       ]
     })
   }
+
+  tags = local.merge_tags
 }
