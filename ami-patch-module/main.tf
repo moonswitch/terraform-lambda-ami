@@ -53,6 +53,8 @@ data "aws_iam_policy_document" "eks_ami_upgrade_policy" {
       "eks:DescribeUpdate",
       "eks:ListTagsForResource",
       "ec2:DescribeLaunchTemplateVersions",
+      "ec2:DescribeLaunchTemplates",
+      "ec2:RunInstances",
       "cloudwatch:PutMetricData",
       "cloudwatch:ListMetrics",
       "cloudwatch:GetMetricData",
