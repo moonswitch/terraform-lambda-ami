@@ -11,6 +11,10 @@ module "ami_patch_cluster1" {
   cluster     = "cluster1"
   rate        = "cron(0 0 */3 * ? *)"
   webhook_url = "webhook_url"
+
+  tags = {
+    tag1 = "tag2"
+  }
 }
 
 module "ami_patch_cluster2" {
@@ -33,6 +37,7 @@ module "ami_patch_cluster2" {
   
 `webhook-url` - Optional: URL endpoint for status of nodegroup updates (Default JSON Serialization is string).   
 
+`tags`        - Optional: Custom tags for resources.
 
 ## Outputs
 
