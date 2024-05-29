@@ -70,7 +70,7 @@ resource "aws_iam_role" "lambda_execution_role" {
 
   inline_policy {
     name   = "lambda_policy"
-    policy = data.aws_iam_policy_document.eks_ami_upgrade_policy
+    policy = data.aws_iam_policy_document.eks_ami_upgrade_policy.json
   }
 
   tags = local.merge_tags
