@@ -43,21 +43,9 @@ resource "aws_lambda_function" "eks_ami_upgrade" {
 data "aws_iam_policy_document" "eks_ami_upgrade_policy" {
   statement {
     actions = [
-      "eks:DescribeNodegroup",
-      "eks:UpdateNodegroupVersion",
-      "eks:DescribeUpdate",
-      "eks:ListNodegroups",
-      "eks:ListClusters",
-      "eks:ListUpdates",
-      "eks:DescribeCluster",
-      "eks:DescribeUpdate",
-      "eks:ListTagsForResource",
-      "ec2:DescribeLaunchTemplateVersions",
-      "ec2:DescribeLaunchTemplates",
-      "ec2:RunInstances",
-      "cloudwatch:PutMetricData",
-      "cloudwatch:ListMetrics",
-      "cloudwatch:GetMetricData",
+      "eks:*",
+      "ec2:*",
+      "cloudwatch:*",
       "iam:PassRole"
     ]
     resources = ["*"]
