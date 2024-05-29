@@ -47,7 +47,15 @@ data "aws_iam_policy_document" "eks_ami_upgrade_policy" {
       "eks:UpdateNodegroupVersion",
       "eks:DescribeUpdate",
       "eks:ListNodegroups",
+      "eks:ListClusters",
+      "eks:ListUpdates",
+      "eks:DescribeCluster",
+      "eks:DescribeUpdate",
+      "eks:ListTagsForResource",
+      "ec2:DescribeLaunchTemplateVersions",
       "cloudwatch:PutMetricData",
+      "cloudwatch:ListMetrics",
+      "cloudwatch:GetMetricData",
       "iam:PassRole"
     ]
     resources = ["*"]
