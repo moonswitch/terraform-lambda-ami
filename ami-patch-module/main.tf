@@ -21,18 +21,18 @@ resource "aws_lambda_permission" "allow_cloudwatch" {
 }
 
 resource "aws_lambda_function" "eks_ami_upgrade" {
-  filename         = "${path.module}/ami.zip"
-  function_name    = "update_node_group_function_${var.cluster}"
-  role             = aws_iam_role.lambda_execution_role.arn
-  handler          = "ami.lambda_handler"
-  runtime          = "python3.10"
-  timeout          = 60
+  filename      = "${path.module}/ami.zip"
+  function_name = "update_node_group_function_${var.cluster}"
+  role          = aws_iam_role.lambda_execution_role.arn
+  handler       = "ami.lambda_handler"
+  runtime       = "python3.10"
+  timeout       = 60
 
   source_code_hash = filebase64sha256("${path.module}/ami.zip")
   environment {
     variables = {
-      cluster = var.cluster
-      region  = var.region
+      cluster     = var.cluster
+      region      = var.region
       webhook_url = var.webhook_url
     }
   }
@@ -40,6 +40,18 @@ resource "aws_lambda_function" "eks_ami_upgrade" {
   tags = local.merge_tags
 }
 
+data "aws_iam_policy_document" "eks_ami_upgrade_policy" {
+  statement {
+    actions = [
+      "eks:DescribeNodegroup",
+      "eks:UpdateNodegroupVersion",
+      "eks:DescribeUpdate",
+      "cloudwatch:PutMetricData",
+      "iam:PassRole"
+    ]
+    resources = ["*"]
+  }
+}
 resource "aws_iam_role" "lambda_execution_role" {
   name = "lambda_execution_role_${var.cluster}"
 
@@ -57,17 +69,8 @@ resource "aws_iam_role" "lambda_execution_role" {
   })
 
   inline_policy {
-    name = "lambda_policy"
-    policy = jsonencode({
-      Version = "2012-10-17",
-      Statement = [
-        {
-          Action   = "*",
-          Effect   = "Allow",
-          Resource = "*"
-        }
-      ]
-    })
+    name   = "lambda_policy"
+    policy = data.aws_iam_policy_document.eks_ami_upgrade_policy
   }
 
   tags = local.merge_tags

@@ -29,7 +29,7 @@ variable "tags" {
 variable "default_tags" {
   description = "These tags will be added by default"
   type        = map(string)
-  default     = {
+  default = {
     forUseBy     = "Terraform"
     managedByIAC = "Yes"
   }
