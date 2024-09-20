@@ -46,6 +46,9 @@ data "aws_iam_policy_document" "eks_ami_upgrade_policy" {
       "eks:*",
       "ec2:*",
       "cloudwatch:*",
+      "logs:CreateLogGroup",
+      "logs:CreateLogStream",
+      "logs:PutLogEvents",
       "iam:PassRole"
     ]
     resources = ["*"]
