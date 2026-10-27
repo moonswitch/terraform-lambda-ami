@@ -9,7 +9,8 @@ when changing its interface and keep runnable caller examples in `examples/`.
 
 Keep the reusable module at the repository root and reserve `modules/` for
 supporting submodules with a concrete reuse need. Keep runnable deployments
-under `examples/`. The planned repository rename is documented in the README.
+under `examples/`. The canonical repository is
+[`moonswitch/terraform-aws-eks-nodegroup-ami-update`](https://github.com/moonswitch/terraform-aws-eks-nodegroup-ami-update).
 
 ## Validation
 
