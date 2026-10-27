@@ -1,0 +1,29 @@
+name: Terraform
+
+on:
+  pull_request:
+  push:
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  validate:
+    runs-on: ubuntu-latest
+    strategy:
+      matrix:
+        terraform: ["1.5.7", "latest"]
+    steps:
+      - uses: actions/checkout@v4
+      - uses: hashicorp/setup-terraform@v3
+        with:
+          terraform_version: ${{ matrix.terraform }}
+      - name: Check formatting
+        run: terraform fmt -check -recursive
+      - name: Validate module and examples
+        run: |
+          for directory in . examples/*; do
+            terraform -chdir="$directory" init -backend=false -input=false
+            terraform -chdir="$directory" validate
+          done
