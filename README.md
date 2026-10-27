@@ -71,7 +71,7 @@ containing this root layout.
 
 | Dependency | Requirement |
 | --- | --- |
-| Terraform | >= 1.5.0 |
+| Terraform | >= 1.17.0 |
 | hashicorp/aws | >= 5.0 |
 
 The caller configures the AWS provider and credentials. Set `region` to match that

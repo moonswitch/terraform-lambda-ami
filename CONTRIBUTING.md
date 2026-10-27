@@ -13,7 +13,7 @@ under `examples/`. The planned repository rename is documented in the README.
 
 ## Validation
 
-Run from the repository root with Terraform >= 1.5:
+Run from the repository root with Terraform >= 1.17.0:
 
 ```sh
 terraform fmt -check -recursive
@@ -24,7 +24,12 @@ done
 ```
 
 Initialization downloads providers but validation requires no AWS credentials.
-CI checks the minimum supported Terraform series and the latest Terraform release.
+CI uses Terraform 1.17.0, the current stable release when this baseline was chosen.
+The workflow pins that version for reproducibility and tests the exact declared
+minimum. With no existing consumers, there is no older-version compatibility
+requirement. Update the CI pin, module and example requirements, and documentation
+together when raising the baseline; add a version matrix if compatibility needs
+justify one.
 These checks validate syntax and provider schemas; they do not verify IAM behavior,
 Lambda execution, or node group updates. Test runtime changes against a disposable
 EKS cluster before release.

@@ -11,14 +11,11 @@ permissions:
 jobs:
   validate:
     runs-on: ubuntu-latest
-    strategy:
-      matrix:
-        terraform: ["1.5.7", "latest"]
     steps:
       - uses: actions/checkout@v4
       - uses: hashicorp/setup-terraform@v3
         with:
-          terraform_version: ${{ matrix.terraform }}
+          terraform_version: "1.17.0"
       - name: Check formatting
         run: terraform fmt -check -recursive
       - name: Validate module and examples
