@@ -1,23 +1,65 @@
-resource "aws_cloudwatch_event_rule" "ami_lambda_schedule" {
-  description         = "A schedule for the EKS AMI nodegroup patch upgrades"
-  name                = "ami-patch-schedule-${var.cluster}"
-  schedule_expression = var.rate
-
+resource "aws_scheduler_schedule_group" "ami_patch" {
+  name = "ami-patch-${var.cluster}"
   tags = local.merge_tags
 }
 
-resource "aws_cloudwatch_event_target" "ami_lambda_schedule_target" {
-  rule      = aws_cloudwatch_event_rule.ami_lambda_schedule.name
-  target_id = "LambdaSchedule"
-  arn       = aws_lambda_function.eks_ami_upgrade.arn
+resource "aws_scheduler_schedule" "ami_lambda_schedule" {
+  name                         = "ami-patch-schedule-${var.cluster}"
+  group_name                   = aws_scheduler_schedule_group.ami_patch.name
+  description                  = "A schedule for the EKS AMI nodegroup patch upgrades"
+  schedule_expression          = var.rate
+  schedule_expression_timezone = var.schedule_timezone
+
+  flexible_time_window {
+    mode = "OFF"
+  }
+
+  target {
+    arn      = aws_lambda_function.eks_ami_upgrade.arn
+    role_arn = aws_iam_role.scheduler_execution_role.arn
+    # Scheduled time is stable across delivery attempts; execution-id is not.
+    # Keep the handler's existing `id` contract for idempotent EKS requests.
+    # Keep context placeholders literal; jsonencode escapes their angle brackets.
+    input = <<-JSON
+      {"id":"<aws.scheduler.schedule-arn>:<aws.scheduler.scheduled-time>"}
+    JSON
+  }
+
+  depends_on = [aws_iam_role_policy.scheduler_invoke]
 }
 
-resource "aws_lambda_permission" "allow_cloudwatch" {
-  statement_id  = "AllowExecutionFromCloudWatch"
-  action        = "lambda:InvokeFunction"
-  function_name = aws_lambda_function.eks_ami_upgrade.function_name
-  principal     = "events.amazonaws.com"
-  source_arn    = aws_cloudwatch_event_rule.ami_lambda_schedule.arn
+resource "aws_iam_role" "scheduler_execution_role" {
+  name = "ami_scheduler_role_${var.cluster}"
+  assume_role_policy = jsonencode({
+    Version = "2012-10-17"
+    Statement = [{
+      Effect    = "Allow"
+      Action    = "sts:AssumeRole"
+      Principal = { Service = "scheduler.amazonaws.com" }
+      Condition = {
+        StringEquals = {
+          "aws:SourceAccount" = data.aws_caller_identity.current.account_id
+        }
+        ArnEquals = {
+          "aws:SourceArn" = aws_scheduler_schedule_group.ami_patch.arn
+        }
+      }
+    }]
+  })
+  tags = local.merge_tags
+}
+
+resource "aws_iam_role_policy" "scheduler_invoke" {
+  name = "invoke_ami_patch_lambda"
+  role = aws_iam_role.scheduler_execution_role.id
+  policy = jsonencode({
+    Version = "2012-10-17"
+    Statement = [{
+      Effect   = "Allow"
+      Action   = "lambda:InvokeFunction"
+      Resource = aws_lambda_function.eks_ami_upgrade.arn
+    }]
+  })
 }
 
 resource "aws_lambda_function" "eks_ami_upgrade" {

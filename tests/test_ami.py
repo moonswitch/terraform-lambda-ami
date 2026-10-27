@@ -150,7 +150,7 @@ class HandlerTests(unittest.TestCase):
             ami.lambda_handler({}, None)
         self.assertEqual(client.update_nodegroup_version.call_count, 2)
 
-    def test_event_retries_use_stable_tokens_per_nodegroup(self):
+    def test_scheduler_retries_use_stable_tokens_per_nodegroup(self):
         client = MagicMock()
         client.get_paginator.return_value.paginate.return_value = [
             {"nodegroups": ["one", "two"]}
@@ -159,9 +159,12 @@ class HandlerTests(unittest.TestCase):
             "update": {"status": "InProgress"}
         }
         self.factory.return_value = client
-        ami.lambda_handler({"id": "event-one"}, None)
-        ami.lambda_handler({"id": "event-one"}, None)
-        ami.lambda_handler({"id": "event-two"}, None)
+        schedule = "arn:aws:scheduler:us-east-2:123456789012:schedule/group/daily"
+        first_run = {"id": f"{schedule}:2026-10-27T03:00:00Z"}
+        next_run = {"id": f"{schedule}:2026-10-28T03:00:00Z"}
+        ami.lambda_handler(first_run, None)
+        ami.lambda_handler(first_run, None)
+        ami.lambda_handler(next_run, None)
         calls = client.update_nodegroup_version.call_args_list
         tokens = [call.kwargs["clientRequestToken"] for call in calls]
         self.assertEqual(tokens[:2], tokens[2:4])

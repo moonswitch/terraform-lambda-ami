@@ -5,8 +5,11 @@ mock_provider "aws" {
   mock_resource "aws_lambda_function" {
     defaults = { arn = "arn:aws:lambda:us-east-2:123456789012:function:update_node_group_function_test" }
   }
-  mock_resource "aws_cloudwatch_event_rule" {
-    defaults = { arn = "arn:aws:events:us-east-2:123456789012:rule/ami-patch-schedule-test" }
+  mock_resource "aws_scheduler_schedule_group" {
+    defaults = { arn = "arn:aws:scheduler:us-east-2:123456789012:schedule-group/ami-patch-test" }
+  }
+  mock_resource "aws_scheduler_schedule" {
+    defaults = { arn = "arn:aws:scheduler:us-east-2:123456789012:schedule/ami-patch-test/ami-patch-schedule-test" }
   }
   mock_data "aws_partition" {
     defaults = { partition = "aws" }
@@ -88,4 +91,84 @@ run "reject_insecure_webhook" {
     webhook_url = "http://example.com/webhook"
   }
   expect_failures = [var.webhook_url]
+}
+
+run "scheduler_defaults_and_permissions" {
+  command = apply
+
+  assert {
+    condition     = output.schedule_expression == "cron(0 3 * * ? *)" && output.schedule_timezone == "UTC"
+    error_message = "The default must run at 3 a.m. daily in UTC."
+  }
+  assert {
+    condition     = aws_scheduler_schedule.ami_lambda_schedule.flexible_time_window[0].mode == "OFF"
+    error_message = "Do not spread daily invocations across a flexible time window."
+  }
+  assert {
+    condition     = output.schedule_arn == aws_scheduler_schedule.ami_lambda_schedule.arn
+    error_message = "Expose the Scheduler ARN to callers."
+  }
+  assert {
+    condition     = aws_scheduler_schedule_group.ami_patch.tags["managedByIAC"] == "Yes"
+    error_message = "Preserve schedule tags on the schedule group."
+  }
+  assert {
+    condition     = jsondecode(aws_scheduler_schedule.ami_lambda_schedule.target[0].input).id == "<aws.scheduler.schedule-arn>:<aws.scheduler.scheduled-time>" && strcontains(aws_scheduler_schedule.ami_lambda_schedule.target[0].input, "<aws.scheduler.scheduled-time>")
+    error_message = "Retries must use a stable schedule/time event ID."
+  }
+  assert {
+    condition     = aws_scheduler_schedule.ami_lambda_schedule.target[0].arn == aws_lambda_function.eks_ami_upgrade.arn && aws_scheduler_schedule.ami_lambda_schedule.target[0].role_arn == aws_iam_role.scheduler_execution_role.arn
+    error_message = "Scheduler must target this Lambda through the execution role."
+  }
+  assert {
+    condition = jsondecode(aws_iam_role_policy.scheduler_invoke.policy).Statement == [{
+      Effect   = "Allow"
+      Action   = "lambda:InvokeFunction"
+      Resource = aws_lambda_function.eks_ami_upgrade.arn
+    }]
+    error_message = "Scheduler may invoke only this Lambda."
+  }
+  assert {
+    condition = jsondecode(aws_iam_role.scheduler_execution_role.assume_role_policy).Statement == [{
+      Effect    = "Allow"
+      Action    = "sts:AssumeRole"
+      Principal = { Service = "scheduler.amazonaws.com" }
+      Condition = {
+        StringEquals = { "aws:SourceAccount" = "123456789012" }
+        ArnEquals    = { "aws:SourceArn" = "arn:aws:scheduler:us-east-2:123456789012:schedule-group/ami-patch-test" }
+      }
+    }]
+    error_message = "Trust only Scheduler from this account and schedule group."
+  }
+}
+
+run "central_timezone_and_custom_expression" {
+  command = plan
+  variables {
+    schedule_timezone = "America/Chicago"
+    rate              = "cron(0 3 * * ? *)"
+  }
+  assert {
+    condition     = output.schedule_timezone == "America/Chicago" && output.schedule_expression == "cron(0 3 * * ? *)"
+    error_message = "US Central callers must keep 3 a.m. local time."
+  }
+}
+
+run "custom_rate" {
+  command = plan
+  variables {
+    rate = "rate(3 days)"
+  }
+  assert {
+    condition     = output.schedule_expression == "rate(3 days)"
+    error_message = "Preserve support for custom rate expressions."
+  }
+}
+
+run "reject_empty_timezone" {
+  command = plan
+  variables {
+    schedule_timezone = " "
+  }
+  expect_failures = [var.schedule_timezone]
 }

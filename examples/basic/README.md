@@ -4,6 +4,12 @@ Deploy the module for an existing EKS cluster with managed node groups. Supply A
 credentials through your normal AWS credential chain. The provider and Lambda
 configuration both use the supplied region.
 
+The example sets `schedule_timezone = "America/Chicago"` and uses the default
+`cron(0 3 * * ? *)` expression, so updates are requested daily at **3 a.m. US
+Central**, automatically adjusting between CST and CDT. Omit the timezone input
+to use the module default of 3 a.m. UTC. The schedule's timezone is independent
+of the AWS region.
+
 ```sh
 cp terraform.tfvars.example terraform.tfvars
 # Edit terraform.tfvars to select your existing cluster and region.
