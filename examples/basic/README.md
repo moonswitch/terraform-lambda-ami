@@ -16,5 +16,12 @@ update the cluster's node groups; use a disposable cluster for evaluation.
 `terraform destroy` removes the resources created by this example, not the existing
 cluster or any AMI updates already performed.
 
-The local source tests this checkout. For independent use, replace it with the
-versioned Git source shown in the repository README.
+The local source (`../..`) tests this checkout. For independent use, replace the
+module's `source` in `main.tf` with:
+
+```hcl
+source = "github.com/moonswitch/terraform-aws-eks-nodegroup-ami-update?ref=<release-tag>"
+```
+
+Replace `<release-tag>` with a published, reviewed tag or commit containing the
+root module layout. See the [repository README](../../README.md) for full usage.

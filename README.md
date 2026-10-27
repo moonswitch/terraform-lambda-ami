@@ -22,26 +22,6 @@ examples/basic/        Runnable caller configuration
 This repository contains one reusable module at its root. Supporting submodules
 can be added under `modules/` if a concrete reuse need arises.
 
-## Planned repository rename
-
-The intended repository name is `terraform-aws-eks-nodegroup-ami-update`, following
-`terraform-<provider>-<purpose>`. The GitHub repository is currently named
-`terraform-lambda-ami`; the remote rename has not been performed.
-
-When renaming the repository:
-
-1. Rename it under the `moonswitch` GitHub organization.
-2. Update local Git remotes to
-   `https://github.com/moonswitch/terraform-aws-eks-nodegroup-ami-update.git`.
-3. Update the usage source below to
-   `github.com/moonswitch/terraform-aws-eks-nodegroup-ami-update?ref=<release-tag>`
-   and check repository links and CI in GitHub.
-4. Tag a release containing the root module layout before distributing the module.
-
-There are no existing consumers, so the old module subfolder is removed without
-a compatibility wrapper. Source URLs for this layout do not use
-`//ami-patch-module`; older tags retain their original layout.
-
 ## Usage
 
 Configure the AWS provider in the caller and use the same region for the provider
@@ -53,7 +33,7 @@ provider "aws" {
 }
 
 module "ami_patch" {
-  source = "github.com/moonswitch/terraform-lambda-ami?ref=<release-tag>"
+  source = "github.com/moonswitch/terraform-aws-eks-nodegroup-ami-update?ref=<release-tag>"
 
   region  = "us-east-2"
   cluster = "cluster1"
@@ -66,8 +46,8 @@ module "ami_patch" {
 ```
 
 See the [basic example](examples/basic/README.md) for local usage.
-The source above uses the current repository name; use a release or commit
-containing this root layout.
+Use a release or commit containing the root module layout. Source URLs do not
+need a module subfolder suffix.
 
 ## Requirements
 
