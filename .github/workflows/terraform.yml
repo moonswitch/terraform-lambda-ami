@@ -24,3 +24,5 @@ jobs:
             terraform -chdir="$directory" init -backend=false -input=false
             terraform -chdir="$directory" validate
           done
+      - name: Test module configuration and permissions
+        run: terraform test
