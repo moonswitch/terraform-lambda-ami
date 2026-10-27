@@ -34,7 +34,3 @@ variable "default_tags" {
     managedByIAC = "Yes"
   }
 }
-
-locals {
-  merge_tags = merge(var.default_tags, var.tags)
-}
