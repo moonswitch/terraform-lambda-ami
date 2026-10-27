@@ -40,13 +40,30 @@ Examples in this repository are validation fixtures and also ignore local locks.
 Real deployment root configurations should commit their own lock files. State,
 plans, local variable values, and credentials must stay out of version control.
 
-## Lambda packaging
+## Python development and Lambda packaging
 
-`ami.py` and the committed `ami.zip` currently form the deployment artifact. Source
-changes require rebuilding the ZIP with its dependencies and checking that `ami.py`
-is at the archive root. Do not replace the ZIP with a source-only archive: the
-handler imports `requests`, which needs to be packaged. A reproducible packaging
-pipeline is follow-up work; see the repository README for current limitations.
+Use Python 3.14 for development and the Lambda runtime:
+
+```sh
+python3.14 -m venv .venv
+.venv/bin/python -m pip install -r requirements-dev.txt
+.venv/bin/python -m unittest discover -s tests -v
+.venv/bin/ruff check .
+.venv/bin/ruff format --check .
+.venv/bin/python scripts/package_lambda.py
+terraform test
+```
+
+The packaging script writes a deterministic `ami.zip` containing only `ami.py`.
+Rebuild and commit the ZIP whenever source changes. CI rebuilds it and rejects
+source/archive drift. Do not include virtual environments, caches, or pip in the
+artifact. The function uses standard-library HTTPS and the AWS SDK supplied by
+Lambda; `requirements-dev.txt` is for local tests and tooling only.
+
+Python tests use SDK stubs and mocked HTTP transport without AWS credentials or
+live updates. Terraform tests use a mock provider to verify runtime, webhook
+configuration, and IAM scopes. Runtime changes also require a disposable EKS
+integration check before production rollout.
 
 ## Releases
 

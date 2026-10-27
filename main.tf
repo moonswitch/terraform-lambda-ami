@@ -22,38 +22,63 @@ resource "aws_lambda_permission" "allow_cloudwatch" {
 
 resource "aws_lambda_function" "eks_ami_upgrade" {
   filename      = "${path.module}/ami.zip"
-  function_name = "update_node_group_function_${var.cluster}"
+  function_name = local.function_name
   role          = aws_iam_role.lambda_execution_role.arn
   handler       = "ami.lambda_handler"
-  runtime       = "python3.10"
-  timeout       = 60
+  runtime       = "python3.14"
+  timeout       = 300
+
+  depends_on = [aws_iam_role_policy.eks_ami_upgrade, aws_cloudwatch_log_group.lambda]
 
   source_code_hash = filebase64sha256("${path.module}/ami.zip")
   environment {
-    variables = {
-      cluster     = var.cluster
-      region      = var.region
-      webhook_url = var.webhook_url
-    }
+    variables = merge(
+      {
+        cluster = var.cluster
+        region  = var.region
+      },
+      var.webhook_url == null ? {} : { webhook_url = var.webhook_url }
+    )
   }
 
   tags = local.merge_tags
 }
 
+data "aws_partition" "current" {}
+data "aws_caller_identity" "current" {}
+
+resource "aws_cloudwatch_log_group" "lambda" {
+  name              = "/aws/lambda/${local.function_name}"
+  retention_in_days = 30
+  tags              = local.merge_tags
+}
+
 data "aws_iam_policy_document" "eks_ami_upgrade_policy" {
   statement {
-    actions = [
-      "eks:*",
-      "ec2:*",
-      "cloudwatch:*",
-      "logs:CreateLogGroup",
-      "logs:CreateLogStream",
-      "logs:PutLogEvents",
-      "iam:PassRole"
-    ]
-    resources = ["*"]
+    sid       = "ListClusterNodegroups"
+    actions   = ["eks:ListNodegroups"]
+    resources = ["${local.eks_arn_prefix}:cluster/${var.cluster}"]
+  }
+
+  statement {
+    sid       = "UpdateClusterNodegroups"
+    actions   = ["eks:UpdateNodegroupVersion"]
+    resources = ["${local.eks_arn_prefix}:nodegroup/${var.cluster}/*/*"]
+  }
+
+  statement {
+    sid       = "WriteFunctionLogs"
+    actions   = ["logs:CreateLogStream", "logs:PutLogEvents"]
+    resources = ["${aws_cloudwatch_log_group.lambda.arn}:log-stream:*"]
   }
 }
+
+resource "aws_iam_role_policy" "eks_ami_upgrade" {
+  name   = "lambda_policy"
+  role   = aws_iam_role.lambda_execution_role.id
+  policy = data.aws_iam_policy_document.eks_ami_upgrade_policy.json
+}
+
 resource "aws_iam_role" "lambda_execution_role" {
   name = "lambda_execution_role_${var.cluster}"
 
@@ -69,11 +94,6 @@ resource "aws_iam_role" "lambda_execution_role" {
       }
     ]
   })
-
-  inline_policy {
-    name   = "lambda_policy"
-    policy = data.aws_iam_policy_document.eks_ami_upgrade_policy.json
-  }
 
   tags = local.merge_tags
 }
