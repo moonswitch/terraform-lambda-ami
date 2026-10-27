@@ -21,9 +21,21 @@ variable "webhook_url" {
 }
 
 variable "rate" {
-  description = "The rate at which the Lambda function will check for AMI updates."
-  default     = "cron(0 0 */3 * ? *)"
+  description = "EventBridge Scheduler expression. Cron expressions use schedule_timezone; rate expressions use elapsed time."
+  default     = "cron(0 3 * * ? *)"
   type        = string
+}
+
+variable "schedule_timezone" {
+  description = "IANA time zone used to evaluate cron schedules, for example UTC or America/Chicago."
+  type        = string
+  default     = "UTC"
+  nullable    = false
+
+  validation {
+    condition     = length(trimspace(var.schedule_timezone)) > 0
+    error_message = "schedule_timezone must be a non-empty IANA time zone name."
+  }
 }
 
 variable "tags" {

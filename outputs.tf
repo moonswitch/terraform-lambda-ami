@@ -23,17 +23,22 @@ output "lambda_function_last_modified" {
   value       = aws_lambda_function.eks_ami_upgrade.last_modified
 }
 
-output "cloudwatch_event_rule_arn" {
-  description = "The ARN of the CloudWatch Events rule"
-  value       = aws_cloudwatch_event_rule.ami_lambda_schedule.arn
+output "schedule_arn" {
+  description = "The ARN of the EventBridge Scheduler schedule"
+  value       = aws_scheduler_schedule.ami_lambda_schedule.arn
 }
 
-output "cloudwatch_event_rule_schedule_expression" {
-  description = "The schedule expression of the CloudWatch Events rule"
-  value       = aws_cloudwatch_event_rule.ami_lambda_schedule.schedule_expression
+output "schedule_expression" {
+  description = "The expression used by EventBridge Scheduler"
+  value       = aws_scheduler_schedule.ami_lambda_schedule.schedule_expression
 }
 
 output "lambda_execution_role_arn" {
   description = "The ARN of the IAM role used by the Lambda function"
   value       = aws_iam_role.lambda_execution_role.arn
+}
+
+output "schedule_timezone" {
+  description = "The time zone used to evaluate the schedule"
+  value       = aws_scheduler_schedule.ami_lambda_schedule.schedule_expression_timezone
 }

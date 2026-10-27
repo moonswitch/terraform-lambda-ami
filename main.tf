@@ -1,23 +1,75 @@
-resource "aws_cloudwatch_event_rule" "ami_lambda_schedule" {
-  description         = "A schedule for the EKS AMI nodegroup patch upgrades"
-  name                = "ami-patch-schedule-${var.cluster}"
-  schedule_expression = var.rate
-
+resource "aws_scheduler_schedule_group" "ami_patch" {
+  name = "ami-patch-${var.cluster}"
   tags = local.merge_tags
 }
 
-resource "aws_cloudwatch_event_target" "ami_lambda_schedule_target" {
-  rule      = aws_cloudwatch_event_rule.ami_lambda_schedule.name
-  target_id = "LambdaSchedule"
-  arn       = aws_lambda_function.eks_ami_upgrade.arn
+resource "aws_scheduler_schedule" "ami_lambda_schedule" {
+  name                         = "ami-patch-schedule-${var.cluster}"
+  group_name                   = aws_scheduler_schedule_group.ami_patch.name
+  description                  = "A schedule for the EKS AMI nodegroup patch upgrades"
+  schedule_expression          = var.rate
+  schedule_expression_timezone = var.schedule_timezone
+
+  flexible_time_window {
+    mode = "OFF"
+  }
+
+  target {
+    arn      = aws_lambda_function.eks_ami_upgrade.arn
+    role_arn = aws_iam_role.scheduler_execution_role.arn
+    # Scheduled time is stable across delivery attempts; execution-id is not.
+    # Keep the handler's existing `id` contract for idempotent EKS requests.
+    # Keep context placeholders literal; jsonencode escapes their angle brackets.
+    input = <<-JSON
+      {"id":"<aws.scheduler.schedule-arn>:<aws.scheduler.scheduled-time>"}
+    JSON
+  }
+
+  depends_on = [aws_iam_role_policy.scheduler_invoke]
 }
 
-resource "aws_lambda_permission" "allow_cloudwatch" {
-  statement_id  = "AllowExecutionFromCloudWatch"
-  action        = "lambda:InvokeFunction"
-  function_name = aws_lambda_function.eks_ami_upgrade.function_name
-  principal     = "events.amazonaws.com"
-  source_arn    = aws_cloudwatch_event_rule.ami_lambda_schedule.arn
+data "aws_iam_policy_document" "scheduler_assume_role" {
+  statement {
+    effect  = "Allow"
+    actions = ["sts:AssumeRole"]
+
+    principals {
+      type        = "Service"
+      identifiers = ["scheduler.amazonaws.com"]
+    }
+
+    condition {
+      test     = "StringEquals"
+      variable = "aws:SourceAccount"
+      values   = [data.aws_caller_identity.current.account_id]
+    }
+
+    condition {
+      test     = "ArnEquals"
+      variable = "aws:SourceArn"
+      values   = [aws_scheduler_schedule_group.ami_patch.arn]
+    }
+  }
+}
+
+resource "aws_iam_role" "scheduler_execution_role" {
+  name               = "ami_scheduler_role_${var.cluster}"
+  assume_role_policy = data.aws_iam_policy_document.scheduler_assume_role.json
+  tags               = local.merge_tags
+}
+
+data "aws_iam_policy_document" "scheduler_invoke" {
+  statement {
+    effect    = "Allow"
+    actions   = ["lambda:InvokeFunction"]
+    resources = [aws_lambda_function.eks_ami_upgrade.arn]
+  }
+}
+
+resource "aws_iam_role_policy" "scheduler_invoke" {
+  name   = "invoke_ami_patch_lambda"
+  role   = aws_iam_role.scheduler_execution_role.id
+  policy = data.aws_iam_policy_document.scheduler_invoke.json
 }
 
 resource "aws_lambda_function" "eks_ami_upgrade" {
@@ -79,21 +131,20 @@ resource "aws_iam_role_policy" "eks_ami_upgrade" {
   policy = data.aws_iam_policy_document.eks_ami_upgrade_policy.json
 }
 
+data "aws_iam_policy_document" "lambda_assume_role" {
+  statement {
+    effect  = "Allow"
+    actions = ["sts:AssumeRole"]
+
+    principals {
+      type        = "Service"
+      identifiers = ["lambda.amazonaws.com"]
+    }
+  }
+}
+
 resource "aws_iam_role" "lambda_execution_role" {
-  name = "lambda_execution_role_${var.cluster}"
-
-  assume_role_policy = jsonencode({
-    Version = "2012-10-17",
-    Statement = [
-      {
-        Action = "sts:AssumeRole",
-        Effect = "Allow",
-        Principal = {
-          Service = "lambda.amazonaws.com"
-        }
-      }
-    ]
-  })
-
-  tags = local.merge_tags
+  name               = "lambda_execution_role_${var.cluster}"
+  assume_role_policy = data.aws_iam_policy_document.lambda_assume_role.json
+  tags               = local.merge_tags
 }

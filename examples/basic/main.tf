@@ -8,6 +8,9 @@ module "ami_patch" {
   region  = var.region
   cluster = var.cluster
 
+  # Run daily at 3 a.m. US Central, adjusting automatically for daylight saving.
+  schedule_timezone = "America/Chicago"
+
   tags = {
     Environment = "example"
   }
