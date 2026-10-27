@@ -6,6 +6,8 @@ Keep public inputs in `variables.tf`, outputs in `outputs.tf`, requirements in
 `versions.tf`, and shared expressions in `locals.tf`. Keep provider configurations
 and backends in callers, not in the reusable module. Update the module reference
 when changing its interface and keep runnable caller examples in `examples/`.
+Define IAM permissions and role trust policies with `aws_iam_policy_document`
+data sources rather than hand-encoding JSON.
 
 Keep the reusable module at the repository root and reserve `modules/` for
 supporting submodules with a concrete reuse need. Keep runnable deployments

@@ -121,24 +121,49 @@ run "scheduler_defaults_and_permissions" {
     error_message = "Scheduler must target this Lambda through the execution role."
   }
   assert {
-    condition = jsondecode(aws_iam_role_policy.scheduler_invoke.policy).Statement == [{
-      Effect   = "Allow"
-      Action   = "lambda:InvokeFunction"
-      Resource = aws_lambda_function.eks_ami_upgrade.arn
-    }]
+    condition = (
+      length(data.aws_iam_policy_document.scheduler_invoke.statement) == 1 &&
+      one(data.aws_iam_policy_document.scheduler_invoke.statement).effect == "Allow" &&
+      one(data.aws_iam_policy_document.scheduler_invoke.statement).actions == toset(["lambda:InvokeFunction"]) &&
+      one(data.aws_iam_policy_document.scheduler_invoke.statement).resources == toset([aws_lambda_function.eks_ami_upgrade.arn])
+    )
     error_message = "Scheduler may invoke only this Lambda."
   }
   assert {
-    condition = jsondecode(aws_iam_role.scheduler_execution_role.assume_role_policy).Statement == [{
-      Effect    = "Allow"
-      Action    = "sts:AssumeRole"
-      Principal = { Service = "scheduler.amazonaws.com" }
-      Condition = {
-        StringEquals = { "aws:SourceAccount" = "123456789012" }
-        ArnEquals    = { "aws:SourceArn" = "arn:aws:scheduler:us-east-2:123456789012:schedule-group/ami-patch-test" }
-      }
-    }]
+    condition = (
+      length(data.aws_iam_policy_document.scheduler_assume_role.statement) == 1 &&
+      one(data.aws_iam_policy_document.scheduler_assume_role.statement).effect == "Allow" &&
+      one(data.aws_iam_policy_document.scheduler_assume_role.statement).actions == toset(["sts:AssumeRole"]) &&
+      one(data.aws_iam_policy_document.scheduler_assume_role.statement).principals == toset([{
+        type        = "Service"
+        identifiers = toset(["scheduler.amazonaws.com"])
+      }]) &&
+      one(data.aws_iam_policy_document.scheduler_assume_role.statement).condition == toset([
+        {
+          test     = "StringEquals"
+          variable = "aws:SourceAccount"
+          values   = tolist(["123456789012"])
+        },
+        {
+          test     = "ArnEquals"
+          variable = "aws:SourceArn"
+          values   = tolist(["arn:aws:scheduler:us-east-2:123456789012:schedule-group/ami-patch-test"])
+        }
+      ])
+    )
     error_message = "Trust only Scheduler from this account and schedule group."
+  }
+  assert {
+    condition = (
+      length(data.aws_iam_policy_document.lambda_assume_role.statement) == 1 &&
+      one(data.aws_iam_policy_document.lambda_assume_role.statement).effect == "Allow" &&
+      one(data.aws_iam_policy_document.lambda_assume_role.statement).actions == toset(["sts:AssumeRole"]) &&
+      one(data.aws_iam_policy_document.lambda_assume_role.statement).principals == toset([{
+        type        = "Service"
+        identifiers = toset(["lambda.amazonaws.com"])
+      }])
+    )
+    error_message = "The Lambda execution role must trust only the Lambda service."
   }
 }
 

@@ -28,38 +28,48 @@ resource "aws_scheduler_schedule" "ami_lambda_schedule" {
   depends_on = [aws_iam_role_policy.scheduler_invoke]
 }
 
+data "aws_iam_policy_document" "scheduler_assume_role" {
+  statement {
+    effect  = "Allow"
+    actions = ["sts:AssumeRole"]
+
+    principals {
+      type        = "Service"
+      identifiers = ["scheduler.amazonaws.com"]
+    }
+
+    condition {
+      test     = "StringEquals"
+      variable = "aws:SourceAccount"
+      values   = [data.aws_caller_identity.current.account_id]
+    }
+
+    condition {
+      test     = "ArnEquals"
+      variable = "aws:SourceArn"
+      values   = [aws_scheduler_schedule_group.ami_patch.arn]
+    }
+  }
+}
+
 resource "aws_iam_role" "scheduler_execution_role" {
-  name = "ami_scheduler_role_${var.cluster}"
-  assume_role_policy = jsonencode({
-    Version = "2012-10-17"
-    Statement = [{
-      Effect    = "Allow"
-      Action    = "sts:AssumeRole"
-      Principal = { Service = "scheduler.amazonaws.com" }
-      Condition = {
-        StringEquals = {
-          "aws:SourceAccount" = data.aws_caller_identity.current.account_id
-        }
-        ArnEquals = {
-          "aws:SourceArn" = aws_scheduler_schedule_group.ami_patch.arn
-        }
-      }
-    }]
-  })
-  tags = local.merge_tags
+  name               = "ami_scheduler_role_${var.cluster}"
+  assume_role_policy = data.aws_iam_policy_document.scheduler_assume_role.json
+  tags               = local.merge_tags
+}
+
+data "aws_iam_policy_document" "scheduler_invoke" {
+  statement {
+    effect    = "Allow"
+    actions   = ["lambda:InvokeFunction"]
+    resources = [aws_lambda_function.eks_ami_upgrade.arn]
+  }
 }
 
 resource "aws_iam_role_policy" "scheduler_invoke" {
-  name = "invoke_ami_patch_lambda"
-  role = aws_iam_role.scheduler_execution_role.id
-  policy = jsonencode({
-    Version = "2012-10-17"
-    Statement = [{
-      Effect   = "Allow"
-      Action   = "lambda:InvokeFunction"
-      Resource = aws_lambda_function.eks_ami_upgrade.arn
-    }]
-  })
+  name   = "invoke_ami_patch_lambda"
+  role   = aws_iam_role.scheduler_execution_role.id
+  policy = data.aws_iam_policy_document.scheduler_invoke.json
 }
 
 resource "aws_lambda_function" "eks_ami_upgrade" {
@@ -121,21 +131,20 @@ resource "aws_iam_role_policy" "eks_ami_upgrade" {
   policy = data.aws_iam_policy_document.eks_ami_upgrade_policy.json
 }
 
+data "aws_iam_policy_document" "lambda_assume_role" {
+  statement {
+    effect  = "Allow"
+    actions = ["sts:AssumeRole"]
+
+    principals {
+      type        = "Service"
+      identifiers = ["lambda.amazonaws.com"]
+    }
+  }
+}
+
 resource "aws_iam_role" "lambda_execution_role" {
-  name = "lambda_execution_role_${var.cluster}"
-
-  assume_role_policy = jsonencode({
-    Version = "2012-10-17",
-    Statement = [
-      {
-        Action = "sts:AssumeRole",
-        Effect = "Allow",
-        Principal = {
-          Service = "lambda.amazonaws.com"
-        }
-      }
-    ]
-  })
-
-  tags = local.merge_tags
+  name               = "lambda_execution_role_${var.cluster}"
+  assume_role_policy = data.aws_iam_policy_document.lambda_assume_role.json
+  tags               = local.merge_tags
 }
